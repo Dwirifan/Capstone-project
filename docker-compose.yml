@@ -1,0 +1,62 @@
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: laravel-app
+        ports:
+            - "9000:9000"
+        volumes:
+            - .:/var/www
+            - ./docker/php/custom-php.ini:/usr/local/etc/php/conf.d/custom-php.ini
+            - ./docker/php/www.conf:/usr/local/etc/php-fpm.d/www.conf
+
+        depends_on:
+            - db
+        deploy:
+            resources:
+                limits:
+                    cpus: "0.25"
+                    memory: 250M
+        restart: unless-stopped
+        networks:
+            - be-dabe
+
+    db:
+        image: mysql:8.0
+        container_name: mysql-db
+        environment:
+            MYSQL_DATABASE: laravel
+            MYSQL_ROOT_PASSWORD: root
+        volumes:
+            - db_data:/var/lib/mysql
+        ports:
+            - "3306:3306"
+        deploy:
+            resources:
+                limits:
+                    cpus: "0.25"
+                    memory: 250M
+        restart: unless-stopped
+        networks:
+            - be-dabe
+
+    nginx:
+        image: nginx:alpine
+        container_name: nginx-web
+        ports:
+            - "80:80"
+        volumes:
+            - .:/var/www
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+        depends_on:
+            - app
+        networks:
+            - be-dabe
+
+volumes:
+    db_data:
+
+networks:
+    be-dabe:
+        external: true
